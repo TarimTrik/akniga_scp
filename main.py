@@ -4,7 +4,7 @@ import requests
 import lxml
 from bs4 import BeautifulSoup
 import json
-import csv
+import time
 
 
 
@@ -31,24 +31,26 @@ def get_data(URL, HEADERS):
     '''
     
     global DATA_BLOKS
+    
 
     resp = requests.get(url=URL, headers=HEADERS)
     soup = BeautifulSoup(resp.text, 'lxml')
 
     # find all_page_number
     pagination = int(soup.find('div', class_='paging').find('div', class_='page__nav').find_all('a', class_='page__nav--standart', recursive=False)[-1].text)
-    
+    count = 0
     
     for page in range(0,pagination):
-        count = 0
+        
         link_href = URL + f'index/page{page}/'
         resp = requests.get(url=link_href, headers=HEADERS)
         soup = BeautifulSoup(resp.text, 'lxml')
+        count_blok = 0
 
         data_blokss = soup.find_all('div', class_='content__main__articles--item')
         for data_blok in data_blokss:
             data_dict = {}
-
+            
 
             selection_title = data_blok.find('a', class_='section__title').contents[-1] # [жанр] обрізати пробіли до і після причому всюди
             selection_title = selection_title.replace(' ','')
@@ -94,18 +96,19 @@ def get_data(URL, HEADERS):
             data_dict['selection_title'] = selection_title
             data_dict['time_read_book'] = time_read
             data_dict['reader_book'] = performer
+            count_blok = count_blok + 1
 
-            DATA_BLOKS[author] = data_dict
+            DATA_BLOKS[f'{author}, {count_blok}, page{count}'] = data_dict
         count = count + 1
         
-        print(f'Response == {resp.text}','{page} Number of {pagination}  // DONE //')
+        print(f'Response == {resp}\n',f'{page} Number of {pagination}  // DONE //\n')
 
     return DATA_BLOKS
 
 
 def json_data (DATA_BLOKS):
     
-    with open('akniga.org/data.json', 'w') as file:
+    with open('akniga.org/data.json', 'w', encoding='utf8') as file:
         json.dump(DATA_BLOKS, file, ensure_ascii=False, indent=4)
 
 
